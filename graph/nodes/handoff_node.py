@@ -1,6 +1,7 @@
 from graph.state import GraphState
 from storage.redis_client import save_last_scrape_time
 from storage.rabbitmq_client import publish_batch
+from monitoring.metrics import record_batch_handoff
 from datetime import datetime
 import uuid
 
@@ -15,6 +16,9 @@ def handoff_node(state: GraphState) -> GraphState:
         "signals_count": len(state["signals"]),
         "signals": state["signals"]
     })
+
+    # Record metrics
+    record_batch_handoff(len(state["signals"]))
 
     return {
         "batch_id": batch_id

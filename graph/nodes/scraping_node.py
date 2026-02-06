@@ -12,6 +12,9 @@ from scrapers.tools.tech_news_scraper import TechNewsScraperTool
 from scrapers.tools.academic_scraper import AcademicScraperTool
 from config.loader import get_scraping_config
 from utils.logger import setup_logger
+from storage.s3_client import s3_client
+from monitoring.metrics import record_scraping_result
+import uuid
 
 logger = setup_logger(__name__)
 
@@ -107,6 +110,14 @@ def scraping_node(state: GraphState) -> GraphState:
                 docs = future.result()
                 documents.extend(docs)
                 logger.info(f"{name} scraper: {len(docs)} documents")
+                
+                # Record metrics
+                record_scraping_result(name, len(docs))
+                
+                # Persist raw documents to S3
+                for doc in docs:
+                    doc_id = str(uuid.uuid4())
+                    s3_client.upload_document(doc_id, doc)
             except Exception as e:
                 logger.error(f"{name} scraper thread failed: {e}")
 
